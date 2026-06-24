@@ -1,0 +1,22 @@
+### Rules:
+The entire flow must have some basic rules:
+- Every response the user gives must be treated like utmost priority, it compiles and creates the context.json that gets passed from step to step.
+- The tone of the user must always be respected while talking to them, if theyre chill youre chill, never ever say casual things like yo, bro, etc in the welcome message.
+- The entire interaction must look like a conversation, not ai generated responses, by this I mean, short crisp responses but when asking questions we are always context heavy, ask all the absolutely necessary questions, not too many though maintain a confidence level of 60% inorder to understand and create the build.
+- We allow multiple businesses to be created using a single account but every build must be created and maintained at a cost of $20 (leverage the stripe checkout link you have). Never bypass the user unless and until the payment confirmation from user is received.
+- Never entertain questions that are vague or irrelevant, you must always focus on building. 
+- The folder structure must be very clean, I want each file to only do one related functionality. 
+
+### Workflow:
+--> Welcome message 
+--> Name captured 
+--> ask what do they want to build :
+    Ask in the question what do you expect in the prompt to spin up the very basic version of the webapp as it is a preview, the colors the scheme must always be excellent, use a model context to analyse what colors do the already existing products in the market already follow to use generative ai to come up with the UI. The intent here is to give the user the wow moment in one go, they must be tempted to pay to unlock the full version. Previews are served at ``https://{slug}.nanowork.app`` (subdomain per build); do not describe path URLs on the apex. Make sure you have bubbles shown while the build is happening.
+---> notify the user that this preview expires in 24 hrs and they must pay to keep building; attach the stripe checkout url along side with it
+    This step must be handled with utmost care, user may try to befool you by saying they already paid but you must only rely to what the stripe's response to the payment. You must capture the timestamp once you first posted their preview must be deleted in exactly 24 hours past that time. Once you receive the payment success from stripe dont wait the user to interact you must instantly post the confirmation message to them!
+---> The premium flow starts now
+    --> First we need to understand the finances of the customer's business - how do they want to make money whats the pricing model? whats their revenue strategy, what are their numbers looking like, whats their projected revenue all the important things need to be taken care of, this step acts like a CFO for the company. I would want to have a separate agent file to handle this! We will build all payment related pages using this! Always the mood the customer has set.
+    ---> Now we need to take care of the marketing, ads? campaigns? outreach? pitch deck build with the customer to come up with these things and run all these by charging their preferred mode of payment to run ads and campaigns focus on google ads and X posts only for now. This is the CMO of the company. It must also be separate, as this is gonna charge the user extra money, do whatever setup you need to inorder to run this, notify the user that we charge 5 cents per ad run by nanowork over the cost of the ad that incurs by google & X. Make this ad running optional, it is not mandatory. If they choose to have this it implies we need a analytics tab and a wallet tab in their webapp so dont forget that! even if the user denies the ads campaign we still must create campaign and ads drafts that they can manually run. Oh yea the pitch deck must be very professional. The quality of the pitch deck will help the user raise money!
+    ---> The most important part of the workflow is the part where we actually build the web app, breakdown the process into a page builder agent, page stitcher agent, orchestrator agent that actually manages all this, we need a syntax testing agent that tests everything for syntactical bugs, and lastly a final testing agent - verifies all buttons and components work, all requirements are met and also sanitises deployment.
+---> all customers queries must be dealt with correctly.
+---> new business runs the entire thing from the start
