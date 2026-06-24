@@ -1,0 +1,8 @@
+{
+  "name": "nanowork-mobile-mvp-jsx-tools",
+  "private": true,
+  "description": "JSX validation via @babel/parser (used by nanowork_mobile.agents.jsx_validator)",
+  "dependencies": {
+    "@babel/parser": "^7.29.3"
+  }
+}

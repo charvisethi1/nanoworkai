@@ -1,0 +1,270 @@
+version: "1"
+services:
+  - type: web
+    name: nanowork-mobile
+    runtime: python
+    repo: https://github.com/nanoworkai/nanowork-mobile-mvp
+    plan: standard
+    region: oregon
+    branch: main
+    buildCommand: uv sync --frozen && uv cache prune --ci
+    startCommand: uv run uvicorn nanowork_mobile.api:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    autoDeployTrigger: commit
+    envVars:
+      # ── Core ──────────────────────────────────────────────
+      - key: ENVIRONMENT
+        value: production
+      - key: LOG_LEVEL
+        value: INFO
+      - key: NANOWORK_DOMAIN
+        value: nanowork.app
+      - key: NANOWORK_PUBLIC_SITE_HOST
+        value: nanowork.app
+      - key: PREVIEW_PUBLIC_URL_TEMPLATE
+        value: "https://{slug}.nanowork.app"
+      - key: CORS_ORIGINS
+        value: "https://nanowork.app,https://www.nanowork.app,https://api.nanowork.app,http://localhost:3000"
+
+      # ── Supabase ──────────────────────────────────────────
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_KEY
+        sync: false                   # service_role secret — server only
+      - key: SUPABASE_ANON_KEY
+        sync: false                   # anon public — embedded in generated app HTML
+
+      # ── Anthropic ─────────────────────────────────────────
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: CLAUDE_MODEL
+        value: claude-sonnet-4-5
+
+      # ── Voyage AI (embeddings) ────────────────────────────
+      - key: VOYAGE_API_KEY
+        sync: false
+
+      # ── Cloudflare ────────────────────────────────────────
+      - key: CF_ACCOUNT_ID
+        sync: false
+      - key: CF_API_TOKEN
+        sync: false
+      - key: CF_KV_NAMESPACE_ID
+        sync: false
+
+      # ── Stripe ────────────────────────────────────────────
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: STRIPE_PAYMENT_LINK
+        sync: false
+
+      # ── Linq (iMessage) ───────────────────────────────────
+      - key: LINQ_API_KEY
+        sync: false
+      - key: LINQ_BASE_URL
+        value: https://api.linqapp.com/api/partner/v3
+
+      # ── GitHub ────────────────────────────────────────────
+      - key: GITHUB_TOKEN
+        sync: false
+      - key: GITHUB_ORG
+        sync: false
+      - key: GITHUB_DEPLOY_ENABLED
+        sync: false
+
+      # ── Internal ──────────────────────────────────────────
+      - key: INTERNAL_SECRET
+        sync: false
+      - key: APP_BASE_URL
+        sync: false
+      - key: FASTAPI_BASE_URL
+        sync: false
+
+      # ── Custom ────────────────────────────────────────────
+      - key: SUPABASE_BRAND_IAMAGES_BUCKET
+        sync: false
+      - key: NANO_BANANA_PRO
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+
+  - type: cron
+    name: nanowork-keepalive
+    runtime: python
+    repo: https://github.com/nanoworkai/nanowork-mobile-mvp
+    region: oregon
+    plan: starter
+    branch: main
+    schedule: "*/10 * * * *"
+    buildCommand: "true"
+    startCommand: 'curl -fsS "http://$NANOWORK_BACKEND_HOSTPORT/health"'
+    envVars:
+      - key: NANOWORK_BACKEND_HOSTPORT
+        fromService:
+          name: nanowork-mobile
+          type: web
+          property: hostport
+
+  - type: cron
+    name: nanowork-preview-expiry
+    runtime: python
+    repo: https://github.com/nanoworkai/nanowork-mobile-mvp
+    region: oregon
+    plan: starter
+    branch: main
+    schedule: "0 * * * *"
+    buildCommand: "true"
+    startCommand: 'curl -fsS -X POST -H "x-internal-secret: $INTERNAL_SECRET" "http://$NANOWORK_BACKEND_HOSTPORT/internal/expire-previews"'
+    envVars:
+      - key: NANOWORK_BACKEND_HOSTPORT
+        fromService:
+          name: nanowork-mobile
+          type: web
+          property: hostport
+      - key: INTERNAL_SECRET
+        fromService:
+          name: nanowork-mobile
+          type: web
+          envVarKey: INTERNAL_SECRET
+
+  - type: cron
+    name: nanowork-payment-nudge
+    runtime: python
+    repo: https://github.com/nanoworkai/nanowork-mobile-mvp
+    region: oregon
+    plan: starter
+    branch: main
+    schedule: "0 */3 * * *"
+    buildCommand: "true"
+    startCommand: 'curl -fsS -X POST -H "x-internal-secret: $INTERNAL_SECRET" "http://$NANOWORK_BACKEND_HOSTPORT/internal/payment-nudge"'
+    envVars:
+      - key: NANOWORK_BACKEND_HOSTPORT
+        fromService:
+          name: nanowork-mobile
+          type: web
+          property: hostport
+      - key: INTERNAL_SECRET
+        fromService:
+          name: nanowork-mobile
+          type: web
+          envVarKey: INTERNAL_SECRET
+
+  - type: cron
+    name: nanowork-payout-reminder
+    runtime: python
+    repo: https://github.com/nanoworkai/nanowork-mobile-mvp
+    region: oregon
+    plan: starter
+    branch: main
+    schedule: "0 10 24 * *"
+    buildCommand: "true"
+    startCommand: 'curl -fsS -X POST -H "x-internal-secret: $INTERNAL_SECRET" "http://$NANOWORK_BACKEND_HOSTPORT/internal/cron/payout-reminder"'
+    envVars:
+      - key: NANOWORK_BACKEND_HOSTPORT
+        fromService:
+          name: nanowork-mobile
+          type: web
+          property: hostport
+      - key: INTERNAL_SECRET
+        fromService:
+          name: nanowork-mobile
+          type: web
+          envVarKey: INTERNAL_SECRET
+
+  - type: cron
+    name: nanowork-abandoned-payment-nudge
+    runtime: python
+    repo: https://github.com/nanoworkai/nanowork-mobile-mvp
+    region: oregon
+    plan: starter
+    branch: main
+    schedule: "0 16 * * 1"
+    buildCommand: "true"
+    startCommand: 'curl -fsS -X POST -H "x-internal-secret: $INTERNAL_SECRET" "http://$NANOWORK_BACKEND_HOSTPORT/internal/cron/abandoned-payment-nudge"'
+    envVars:
+      - key: NANOWORK_BACKEND_HOSTPORT
+        fromService:
+          name: nanowork-mobile
+          type: web
+          property: hostport
+      - key: INTERNAL_SECRET
+        fromService:
+          name: nanowork-mobile
+          type: web
+          envVarKey: INTERNAL_SECRET
+
+  - type: cron
+    name: nanowork-connect-onboarding-reminder
+    runtime: python
+    repo: https://github.com/nanoworkai/nanowork-mobile-mvp
+    region: oregon
+    plan: starter
+    branch: main
+    schedule: "0 17 * * 1"
+    buildCommand: "true"
+    startCommand: 'curl -fsS -X POST -H "x-internal-secret: $INTERNAL_SECRET" "http://$NANOWORK_BACKEND_HOSTPORT/internal/cron/connect-onboarding-reminder"'
+    envVars:
+      - key: NANOWORK_BACKEND_HOSTPORT
+        fromService:
+          name: nanowork-mobile
+          type: web
+          property: hostport
+      - key: INTERNAL_SECRET
+        fromService:
+          name: nanowork-mobile
+          type: web
+          envVarKey: INTERNAL_SECRET
+  # ──────────────────────────────────────────────────────────────────
+  # Background Workers
+  # ──────────────────────────────────────────────────────────────────
+
+  - type: worker
+    name: nanowork-scraper-worker
+    runtime: python
+    repo: https://github.com/nanoworkai/nanowork-mobile-mvp
+    plan: starter
+    region: oregon
+    branch: main
+    buildCommand: uv sync --frozen && uv cache prune --ci
+    startCommand: uv run python -m nanowork_mobile.workers.scraper_worker
+    autoDeploy: true
+    envVars:
+      # Inherit most vars from web service
+      - key: ENVIRONMENT
+        value: production
+      - key: LOG_LEVEL
+        value: INFO
+      
+      # Supabase
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_KEY
+        sync: false
+      
+      # Embeddings
+      - key: EMBEDDING_PROVIDER
+        value: voyage
+      - key: VOYAGE_API_KEY
+        sync: false
+      
+      # Scraping
+      - key: SCRAPER_BACKEND
+        value: jina
+      - key: JINA_API_KEY
+        sync: false
+      
+      # Worker settings
+      - key: WORKER_POLL_INTERVAL
+        value: "2.0"
+      - key: WORKER_MAX_RETRIES
+        value: "3"
+      - key: WORKER_TIMEOUT
+        value: "300"
+      
+      # Linq (for notifications)
+      - key: LINQ_API_KEY
+        sync: false
+      - key: LINQ_BASE_URL
+        value: https://api.linqapp.com/api/partner/v3
